@@ -6,13 +6,12 @@ import aiofiles
 from aiohttp import web
 
 
-INTERVAL_SECS = 1
-
-
 async def archive(request):
     response = web.StreamResponse()
     archive_hash = request.match_info.get('archive_hash', 'Anonymous')
     folder_path = os.path.join('test_photos', archive_hash)
+    if not os.path.exists(folder_path):
+        raise web.HTTPNotFound(text='The archive does not exist')
 
     response.headers['Content-Type'] = 'text/html'
     content_disposition = 'attachment; filename="archive.zip"'
