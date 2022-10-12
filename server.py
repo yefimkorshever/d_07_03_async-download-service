@@ -37,6 +37,7 @@ async def archive(request):
         await response.write(portion)
         if process.stdout.at_eof():
             break
+        await asyncio.sleep(1)
 
     return response
 
