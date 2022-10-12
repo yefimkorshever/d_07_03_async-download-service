@@ -1,31 +1,46 @@
 import asyncio
-import datetime
+
+import os
 
 import aiofiles
 from aiohttp import web
+
 
 INTERVAL_SECS = 1
 
 
 async def archive(request):
     response = web.StreamResponse()
+    archive_hash = request.match_info.get('archive_hash', 'Anonymous')
+    folder_path = os.path.join('test_photos', archive_hash)
 
-    # Большинство браузеров не отрисовывают частично загруженный контент,
-    # только если это не HTML.
-    # Поэтому отправляем клиенту именно HTML, указываем это в Content-Type.
     response.headers['Content-Type'] = 'text/html'
+    content_disposition = 'attachment; filename="archive.zip"'
+    response.headers['Content-Disposition'] = content_disposition
 
-    # Отправляет клиенту HTTP заголовки
     await response.prepare(request)
 
+    process = await asyncio.create_subprocess_exec(
+        'zip',
+        '-',
+        '.',
+        '-r',
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+        cwd=folder_path
+    )
+    bytes_portion = 102400
+
     while True:
-        formatted_date = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        message = f'{formatted_date}<br>'  # <br> — HTML тег переноса строки
+        portion = await process.stdout.read(bytes_portion)
 
-        # Отправляет клиенту очередную порцию ответа
-        await response.write(message.encode('utf-8'))
+        await response.write(portion)
+        if process.stdout.at_eof():
+            break
 
-        await asyncio.sleep(INTERVAL_SECS)
+    return response
+
+# pylint: disable=unused-argument
 
 
 async def handle_index_page(request):
