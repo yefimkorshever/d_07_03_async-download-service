@@ -1,16 +1,45 @@
+import argparse
 import asyncio
+import functools
 import logging
 import os
 
 import aiofiles
 from aiohttp import web
+from environs import Env
 
 
-async def archive(request):
+def create_input_args_parser():
+    description = ('Asynchronous download service.')
+    parser = argparse.ArgumentParser(description=description)
+
+    parser.add_argument(
+        '--debug_mode',
+        help='Turn on debug mode',
+        action="store_true",
+    )
+
+    parser.add_argument(
+        '--response_delay',
+        metavar='{response delay}',
+        help='Set response delay in seconds, 0 by default',
+        type=int,
+    )
+
+    parser.add_argument(
+        '--folder_path',
+        metavar='{folder path}',
+        help='Path to photos folder, test_photos by default',
+    )
+
+    return parser
+
+
+async def archive(request, response_delay, folder_path):
     response = web.StreamResponse()
     archive_hash = request.match_info.get('archive_hash', 'Anonymous')
-    folder_path = os.path.join('test_photos', archive_hash)
-    if not os.path.exists(folder_path):
+    source_path = os.path.join(folder_path, archive_hash)
+    if not os.path.exists(source_path):
         raise web.HTTPNotFound(text='The archive does not exist')
 
     response.headers['Content-Type'] = 'text/html'
@@ -26,20 +55,20 @@ async def archive(request):
         '-r',
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
-        cwd=folder_path
+        cwd=source_path
     )
     bytes_portion = 102400
     try:
         while True:
-            logging.info('Sending archive chunk ...')
+            logging.debug('Sending archive chunk ...')
             portion = await process.stdout.read(bytes_portion)
             await response.write(portion)
             if process.stdout.at_eof():
                 break
-            await asyncio.sleep(1)
+            await asyncio.sleep(response_delay)
     except (asyncio.CancelledError, IndexError, SystemExit) as fail:
         if isinstance(fail, asyncio.CancelledError):
-            logging.error('Download was interrupted')
+            logging.debug('Download was interrupted')
         process.kill()
         await process.communicate()
         response.force_close()
@@ -57,13 +86,34 @@ async def handle_index_page(request):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(levelname)s [%(asctime)s]  %(message)s'
-    )
+    env = Env()
+    env.read_env()
+    input_args_parser = create_input_args_parser()
+    input_args = input_args_parser.parse_args()
+    debug_mode = input_args.debug_mode or env.bool('DEBUG_MODE', False)
+    if input_args.response_delay:
+        response_delay = input_args.response_delay
+    else:
+        response_delay = env.int('RESPONSE_DELAY', 0)
+
+    if input_args.folder_path:
+        folder_path = input_args.folder_path
+    else:
+        folder_path = env('FOLDER_PATH', 'test_photos')
+
+    if debug_mode:
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format='%(levelname)s [%(asctime)s]  %(message)s'
+        )
     app = web.Application()
+    archive_handler = functools.partial(
+        archive,
+        response_delay=response_delay,
+        folder_path=folder_path
+    )
     app.add_routes([
         web.get('/', handle_index_page),
-        web.get('/archive/{archive_hash}/', archive),
+        web.get('/archive/{archive_hash}/', archive_handler),
     ])
     web.run_app(app)
