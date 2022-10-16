@@ -1,54 +1,73 @@
-# Микросервис для скачивания файлов
+# Asynchronous download microservice
 
-Микросервис помогает работе основного сайта, сделанного на CMS и обслуживает
-запросы на скачивание архивов с файлами. Микросервис не умеет ничего, кроме упаковки файлов
-в архив. Закачиваются файлы на сервер через FTP или админку CMS.
+Microservice serves requests for downloading archives with files. Files are uploaded to the server via FTP or CMS admin panel.
+The archive is created at the request of the user. The archive is not saved to disk, it is immediately sent to the user for download.
+The archive is protected from unauthorized access by a hash in the address of the download link, for example: `http://host.ru/archive/7kna/`. The hash is set by the name of the directory with files.
 
-Создание архива происходит на лету по запросу от пользователя. Архив не сохраняется на диске, вместо этого по мере упаковки он сразу отправляется пользователю на скачивание.
+## Prerequisites
 
-От неавторизованного доступа архив защищен хешом в адресе ссылки на скачивание, например: `http://host.ru/archive/3bea29ccabbbf64bdebcc055319c5745/`. Хеш задается названием каталога с файлами, выглядит структура каталога так:
+- Linux operating system;
+- Python 3.10.
 
-```
-- photos
-    - 3bea29ccabbbf64bdebcc055319c5745
-      - 1.jpg
-      - 2.jpg
-      - 3.jpg
-    - af1ad8c76fda2e48ea9aed2937e972ea
-      - 1.jpg
-      - 2.jpg
-```
+## Installing
 
-
-## Как установить
-
-Для работы микросервиса нужен Python версии не ниже 3.6.
+- Download the project files;
+- It is recommended to use [venv](https://docs.python.org/3/library/venv.html?highlight=venv#module-venv) for project isolation.
+- Set up packages:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-## Как запустить
+## Running
 
 ```bash
 python server.py
 ```
 
-Сервер запустится на порту 8080, чтобы проверить его работу перейдите в браузере на страницу [http://127.0.0.1:8080/](http://127.0.0.1:8080/).
+The server will start on port 8080, to check its operation, go to [http://127.0.0.1:8080/](http://127.0.0.1:8080/).
 
-## Как развернуть на сервере
+## Deploying on the server
 
 ```bash
 python server.py
 ```
 
-После этого перенаправить на микросервис запросы, начинающиеся с `/archive/`. Например:
+Redirect requests starting with `/archive/` to the microservice, e.g.:
 
-```
+```bash
 GET http://host.ru/archive/3bea29ccabbbf64bdebcc055319c5745/
 GET http://host.ru/archive/af1ad8c76fda2e48ea9aed2937e972ea/
 ```
 
-# Цели проекта
+## Settings
 
-Код написан в учебных целях — это урок в курсе по Python и веб-разработке на сайте [Devman](https://dvmn.org).
+- Set up environmental variables in your operating system or in the .env file. The variables are:
+  - `DEBUG_MODE` is used to output logs, False by default;
+  - `RESPONSE_DELAY` is a pause for sending every chunk of the archive, 0 by default;
+  - `FOLDER_PATH` is a path to photos folder, test_photos by default
+
+To set up variables in .env file, create it in the root directory of the project and fill it up like this:
+
+```bash
+DEBUG_MODE=True
+RESPONSE_DELAY=2
+FOLDER_PATH=my_folder
+```
+
+- You can use command line arguments to specify debug mode, response delay and folder path, e.g.:
+
+```bash
+python server.py --debug_mode --response_delay 1 --folder_path my_photos
+```
+
+To find out more, run:
+
+```bash
+python server.py -h
+```
+
+## Project goals
+
+The project was created for educational purposes.
+It's a lesson for python and web developers at [Devman](https://dvmn.org).

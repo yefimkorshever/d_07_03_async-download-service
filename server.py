@@ -58,6 +58,7 @@ async def archive(request, response_delay, folder_path):
         cwd=source_path
     )
     bytes_portion = 102400
+    logging.debug('Response delay: %s', response_delay)
     try:
         while True:
             logging.debug('Sending archive chunk ...')
@@ -91,7 +92,7 @@ if __name__ == '__main__':
     input_args_parser = create_input_args_parser()
     input_args = input_args_parser.parse_args()
     debug_mode = input_args.debug_mode or env.bool('DEBUG_MODE', False)
-    if input_args.response_delay:
+    if isinstance(input_args.response_delay, int):
         response_delay = input_args.response_delay
     else:
         response_delay = env.int('RESPONSE_DELAY', 0)
