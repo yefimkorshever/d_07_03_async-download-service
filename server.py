@@ -29,19 +29,22 @@ async def archive(request):
         cwd=folder_path
     )
     bytes_portion = 102400
-
     try:
         while True:
             logging.info('Sending archive chunk ...')
             portion = await process.stdout.read(bytes_portion)
-
             await response.write(portion)
             if process.stdout.at_eof():
                 break
             await asyncio.sleep(1)
-    except asyncio.CancelledError:
-        logging.error('Download was interrupted')
+    except (asyncio.CancelledError, IndexError, SystemExit) as fail:
+        if isinstance(fail, asyncio.CancelledError):
+            logging.error('Download was interrupted')
+        process.kill()
+        await process.communicate()
+        response.force_close()
         raise
+
     return response
 
 # pylint: disable=unused-argument
