@@ -67,13 +67,14 @@ async def archive(request, response_delay, folder_path):
             if process.stdout.at_eof():
                 break
             await asyncio.sleep(response_delay)
-    except (asyncio.CancelledError, IndexError, SystemExit) as fail:
-        if isinstance(fail, asyncio.CancelledError):
-            logging.debug('Download was interrupted')
-        process.kill()
-        await process.communicate()
-        response.force_close()
+    except asyncio.CancelledError:
+        logging.debug('Download was interrupted')
         raise
+    finally:
+        if process.returncode is None:
+            process.kill()
+            await process.communicate()
+            response.force_close()
 
     return response
 
