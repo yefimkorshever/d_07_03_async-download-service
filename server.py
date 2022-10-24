@@ -57,13 +57,13 @@ async def archive(request, response_delay, folder_path):
         stderr=asyncio.subprocess.PIPE,
         cwd=source_path
     )
-    bytes_portion = 102400
+    bytes_chunk = 102400
     logging.debug('Response delay: %s', response_delay)
     try:
         while True:
             logging.debug('Sending archive chunk ...')
-            portion = await process.stdout.read(bytes_portion)
-            await response.write(portion)
+            chunk = await process.stdout.read(bytes_chunk)
+            await response.write(chunk)
             if process.stdout.at_eof():
                 break
             await asyncio.sleep(response_delay)
