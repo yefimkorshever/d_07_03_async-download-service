@@ -9,7 +9,7 @@ from aiohttp import web
 from environs import Env
 
 
-def create_input_args_parser():
+def create_args_parser():
     description = ('Asynchronous download service.')
     parser = argparse.ArgumentParser(description=description)
 
@@ -89,16 +89,16 @@ async def handle_index_page(request):
 if __name__ == '__main__':
     env = Env()
     env.read_env()
-    input_args_parser = create_input_args_parser()
-    input_args = input_args_parser.parse_args()
-    debug_mode = input_args.debug_mode or env.bool('DEBUG_MODE', False)
-    if isinstance(input_args.response_delay, int):
-        response_delay = input_args.response_delay
+    args_parser = create_args_parser()
+    args = args_parser.parse_args()
+    debug_mode = args.debug_mode or env.bool('DEBUG_MODE', False)
+    if isinstance(args.response_delay, int):
+        response_delay = args.response_delay
     else:
         response_delay = env.int('RESPONSE_DELAY', 0)
 
-    if input_args.folder_path:
-        folder_path = input_args.folder_path
+    if args.folder_path:
+        folder_path = args.folder_path
     else:
         folder_path = env('FOLDER_PATH', 'test_photos')
 
