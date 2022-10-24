@@ -37,7 +37,7 @@ def create_args_parser():
 
 async def archive(request, response_delay, folder_path):
     response = web.StreamResponse()
-    archive_hash = request.match_info.get('archive_hash', 'Anonymous')
+    archive_hash = request.match_info['archive_hash']
     source_path = os.path.join(folder_path, archive_hash)
     if not os.path.exists(source_path):
         raise web.HTTPNotFound(text='The archive does not exist')
