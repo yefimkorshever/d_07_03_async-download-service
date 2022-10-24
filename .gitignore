@@ -3,6 +3,7 @@ images/
 my_images/
 .vscode/
 tmp*.*
+*.code-workspace
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
